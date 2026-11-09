@@ -46,20 +46,22 @@ jobs:
               icon = img.resize((size, size), Image.Resampling.LANCZOS)
               icon.save(folder / "ic_launcher.png")
               icon.save(folder / "ic_launcher_round.png")
+          # FIX: foreground/background di drawable, BUKAN mipmap
           for density, size in sizes.items():
-              folder = Path(f"app/src/main/res/mipmap-{density}")
+              d_folder = Path(f"app/src/main/res/drawable-{density}")
+              d_folder.mkdir(parents=True, exist_ok=True)
               fg_size = int(size * 108 / 48)
               fg = Image.new("RGBA", (fg_size, fg_size), (0,0,0,0))
               inner = img.resize((int(fg_size*0.75), int(fg_size*0.75)), Image.Resampling.LANCZOS)
               fg.paste(inner, ((fg_size-inner.size[0])//2, (fg_size-inner.size[1])//2), inner)
-              fg.save(folder / "ic_launcher_foreground.png")
+              fg.save(d_folder / "ic_launcher_foreground.png")
               bg = Image.new("RGBA", (fg_size, fg_size), (20, 20, 25, 255))
-              bg.save(folder / "ic_launcher_background.png")
+              bg.save(d_folder / "ic_launcher_background.png")
           anydpi = Path("app/src/main/res/mipmap-anydpi-v26")
           anydpi.mkdir(parents=True, exist_ok=True)
-          (anydpi / "ic_launcher.xml").write_text('<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n<background android:drawable="@mipmap/ic_launcher_background"/>\n<foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n<monochrome android:drawable="@mipmap/ic_launcher_foreground"/>\n</adaptive-icon>')
-          (anydpi / "ic_launcher_round.xml").write_text('<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n<background android:drawable="@mipmap/ic_launcher_background"/>\n<foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n</adaptive-icon>')
-          print("Ikon Bella Adaptive berhasil dibuat!")
+          (anydpi / "ic_launcher.xml").write_text('<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n<background android:drawable="@drawable/ic_launcher_background"/>\n<foreground android:drawable="@drawable/ic_launcher_foreground"/>\n</adaptive-icon>')
+          (anydpi / "ic_launcher_round.xml").write_text('<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n<background android:drawable="@drawable/ic_launcher_background"/>\n<foreground android:drawable="@drawable/ic_launcher_foreground"/>\n</adaptive-icon>')
+          print("Ikon Bella Adaptive FIXED!")
           PY
 
       - name: Setup Java
@@ -78,9 +80,7 @@ jobs:
           python3 - <<'PY'
           import pathlib
           files = list(pathlib.Path(".").rglob("build.gradle")) + list(pathlib.Path(".").rglob("build.gradle.kts"))
-          print(f"Ketemu {len(files)} file:")
           for f in files:
-              print(" -", f)
               text = f.read_text()
               orig = text
               text = text.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_17")
@@ -93,7 +93,7 @@ jobs:
               text = text.replace("1_8", "17")
               if text != orig:
                   f.write_text(text)
-                  print(f"  -> DIPERBAIKI: {f}")
+                  print(f"DIPERBAIKI: {f}")
           PY
 
       - name: Build APK
