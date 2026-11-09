@@ -56,25 +56,25 @@ jobs:
               img.resize((size, size)).save(target / "ic_launcher.png")
           PY
 
-      - name: Fix Java and Kotlin targets
+      
+      - name: Force Java and Kotlin target 17
         run: |
           FILE="$PROJECT_DIR/app/build.gradle.kts"
           test -f "$FILE"
 
-          python3 - "$FILE" <<'PY'
-          import sys
-          from pathlib import Path
+          cat >> "$FILE" <<'EOF'
 
-          p = Path(sys.argv[1])
-          s = p.read_text()
+          android {
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+          }
+          EOF
 
-          s = s.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_17")
-          s = s.replace('jvmTarget = "1.8"', 'jvmTarget = "17"')
-          s = s.replace("jvmTarget = '1.8'", 'jvmTarget = "17"')
+          echo "Konfigurasi Java 17 ditambahkan."
+          cat "$FILE"
 
-          p.write_text(s)
-          print(s)
-          PY
 
       - name: Setup Java
         uses: actions/setup-java@v4
