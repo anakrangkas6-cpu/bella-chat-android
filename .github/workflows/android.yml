@@ -1,5 +1,5 @@
-name: Build Bella Chat APK
 
+name: Build Bella Chat APK
 on:
 push:
 branches:
