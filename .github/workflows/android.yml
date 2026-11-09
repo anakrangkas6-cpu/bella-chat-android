@@ -50,19 +50,25 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-
+                                                       
       - name: Fix Java and Kotlin compatibility
         run: |
-          echo "=== SEBELUM ==="
-          cat app/build.gradle.kts || cat app/build.gradle
-          # Ini yang bener, path-nya app/ bukan bella-chat-android/app/
-          sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' app/build.gradle.kts
-          sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' app/build.gradle
-          sed -i 's/jvmTarget = "1.8"/jvmTarget = "17"/g' app/build.gradle.kts
-          sed -i 's/jvmTarget = "1.8"/jvmTarget = "17"/g' app/build.gradle
-          sed -i "s/jvmTarget = '1.8'/jvmTarget = '17'/g" app/build.gradle
-          echo "=== SESUDAH ==="
-          cat app/build.gradle.kts || cat app/build.gradle
+          echo "=== CARI FILE NYA ==="
+          find . -maxdepth 3 -name "build.gradle*" -print
+          ls -R app | head -n 100
+
+          echo "=== FIX SEMUA YANG KETEMU ==="
+          for f in app/build.gradle.kts app/build.gradle build.gradle.kts build.gradle bella-chat-android/app/build.gradle.kts; do
+            if [ -f "$f" ]; then
+              echo "Fix file: $f"
+              sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' "$f" || true
+              sed -i 's/jvmTarget = "1.8"/jvmTarget = "17"/g' "$f" || true
+              sed -i "s/jvmTarget = '1.8'/jvmTarget = '17'/g" "$f" || true
+              sed -i 's/JvmTarget = "1.8"/JvmTarget = "17"/g' "$f" || true
+              cat "$f"
+            fi
+          done
+          echo "=== SELESAI FIX ==="
 
       - name: Build APK
         run: gradle --no-daemon assembleDebug
