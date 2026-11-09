@@ -56,6 +56,11 @@ jobs:
           print("Ikon Bella berhasil dibuat.")
           PY
 
+      - name: Fix Java and Kotlin compatibility
+        run: |
+          sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' app/build.gradle.kts
+          sed -i 's/jvmTarget = "1.8"/jvmTarget = "17"/g' app/build.gradle.kts
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
