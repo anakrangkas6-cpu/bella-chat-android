@@ -57,10 +57,16 @@ jobs:
           PY
 
       
+      
       - name: Fix Java and Kotlin compatibility
         run: |
-          sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' bella-chat-android/app/build.gradle.kts
-          sed -i 's/jvmTarget = "1.8"/jvmTarget = "17"/g' bella-chat-android/app/build.gradle.kts
+          FILE=$(find . -path '*/app/build.gradle.kts' -print -quit)
+          echo "File ditemukan: $FILE"
+          test -n "$FILE"
+          sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' "$FILE"
+          sed -i 's/jvmTarget = "1.8"/jvmTarget = "17"/g' "$FILE"
+          grep -n -E 'VERSION_17|jvmTarget' "$FILE"
+
 
 
       - name: Setup Java
