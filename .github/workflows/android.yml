@@ -20,6 +20,9 @@ jobs:
       - name: Extract Android project
         run: unzip -o Bella-Chat-Android-Tahap-1.zip -d .
 
+        - name: Fix Java compatibility
+          run: sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' app/build.gradle.kts
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
