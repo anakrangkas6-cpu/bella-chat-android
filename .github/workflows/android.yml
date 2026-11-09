@@ -28,15 +28,17 @@ jobs:
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Project ditemukan: $PROJECT_DIR"
 
+      
       - name: Generate Bella launcher icon
         run: |
           python3 -m pip install pillow
           python3 - <<'PY'
           from PIL import Image, ImageOps
           from pathlib import Path
+          import os
 
+          project = Path(os.environ["PROJECT_DIR"])
           img = Image.open("bella-icon.png").convert("RGBA")
-          img = ImageOps.fit(img, (512, 512))
 
           sizes = {
               "mdpi": 48,
@@ -68,6 +70,11 @@ jobs:
 
           print("Ikon Bella berhasil dipasang.")
           PY
+
+          python3 -m pip install pillow
+          python3 - <<'PY'
+          from PIL import Image, ImageOps
+          from pathlib import 
 
       
       - name: Force Java and Kotlin target 17
