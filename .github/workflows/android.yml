@@ -35,7 +35,7 @@ jobs:
           from PIL import Image, ImageOps
           from pathlib import Path
 
-          img = Image.open("1794032586501.jpg").convert("RGBA")
+          img = Image.open("bella-icon.png").convert("RGBA")
           img = ImageOps.fit(img, (512, 512))
 
           sizes = {
