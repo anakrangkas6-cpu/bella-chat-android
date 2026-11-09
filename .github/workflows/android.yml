@@ -1,90 +1,95 @@
-
 name: Build Bella Chat APK
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+push:
+branches:
+- main
+workflow_dispatch:
 
 permissions:
-  contents: read
+contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+build:
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+steps:  
+  - name: Checkout  
+    uses: actions/checkout@v4  
 
-      - name: Extract Android project
-        run: |
-          mkdir -p extracted
-          unzip -o Bella-Chat-Android-Tahap-1.zip -d extracted
+  - name: Extract Android project  
+    run: |  
+      unzip -o Bella-Chat-Android-Tahap-1.zip -d .  
+      test -f app/src/main/AndroidManifest.xml  
+      ls -R | head -n 100  
 
-          PROJECT_DIR=$(find extracted -name settings.gradle.kts -printf '%h\n' | head -n 1)
-          test -n "$PROJECT_DIR"
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Project ditemukan: $PROJECT_DIR"
+  - name: Generate Bella launcher icon  
+    run: |  
+      python3 -m pip install pillow  
+      python3 - <<'PY'  
+      from PIL import Image, ImageOps  
+      from pathlib import Path  
+      img = Image.open("1794032586501.jpg").convert("RGBA")  
+      img = ImageOps.fit(img, (512, 512))  
+      sizes = {"mdpi": 48,"hdpi": 72,"xhdpi": 96,"xxhdpi": 144,"xxxhdpi": 192}  
+      for density, size in sizes.items():  
+          folder = Path(f"app/src/main/res/mipmap-{density}")  
+          folder.mkdir(parents=True, exist_ok=True)  
+          icon = img.resize((size, size), Image.Resampling.LANCZOS)  
+          icon.save(folder / "ic_launcher.png")  
+      print("Ikon Bella berhasil dibuat.")  
+      PY  
 
-           - name: Generate Bella launcher icon
-        run: |
-          python3 -m pip install pillow
-          python3 - <<'PY'
-          from PIL import Image, ImageOps
-          from pathlib import Path
-          img = Image.open("bella-icon.png").convert("RGBA")
-          img = ImageOps.fit(img, (512, 512))
-          sizes = {"mdpi": 48,"hdpi": 72,"xhdpi": 96,"xxhdpi": 144,"xxxhdpi": 192}
-          for density, size in sizes.items():
-              folder = Path(f"app/src/main/res/mipmap-{density}")
-              folder.mkdir(parents=True, exist_ok=True)
-              icon = img.resize((size, size), Image.Resampling.LANCZOS)
-              icon.save(folder / "ic_launcher.png")
-          print("Ikon Bella berhasil dibuat.")
-          PY
+  - name: Setup Java  
+    uses: actions/setup-java@v4  
+    with:  
+      distribution: temurin  
+      java-version: "17"  
 
-      
-      - name: Force Java and Kotlin target 17
-        run: |
-          FILE="$PROJECT_DIR/app/build.gradle.kts"
-          test -f "$FILE"
+  - name: Setup Gradle  
+    uses: gradle/actions/setup-gradle@v4  
+    with:  
+      gradle-version: "8.9"  
+                                                     
+  - name: Fix Java and Kotlin compatibility  
+    run: |  
+      python3 - <<'PY'  
+      import pathlib, re  
+      # Cari SEMUA file build.gradle, di mana pun dia ngumpet  
+      files = list(pathlib.Path(".").rglob("build.gradle")) + list(pathlib.Path(".").rglob("build.gradle.kts"))  
+      print(f"Ketemu {len(files)} file:")  
+      for f in files:  
+          print(" -", f)  
+          text = f.read_text()  
+          orig = text  
+          # Ganti semua bentuk 1.8 jadi 17, semua format  
+          text = text.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_17")  
+          text = text.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_17")  
+          text = text.replace('jvmTarget = "1.8"', 'jvmTarget = "17"')  
+          text = text.replace("jvmTarget = '1.8'", "jvmTarget = '17'")  
+          text = text.replace('JvmTarget = "1.8"', 'JvmTarget = "17"')  
+          text = text.replace('"1.8"', '"17"')  
+          text = text.replace("'1.8'", "'17'")  
+          text = text.replace("VERSION_1_8", "VERSION_17")  
+          text = text.replace("1_8", "17")  
+          # Kalau masih ada compileOptions yang bandel, paksa tambahin toolchain  
+          if "jvmToolchain" not in text and "app/build" in str(f):  
+              text += "\n\nkotlin { jvmToolchain(17) }\n"  
+          if text != orig:  
+              f.write_text(text)  
+              print(f"  -> DIPERBAIKI: {f}")  
+          else:  
+              print(f"  -> sudah 17 / tidak ada 1.8")  
+          print(f.read_text()[:1500])  
+          print("-----")  
+      PY  
 
-          cat >> "$FILE" <<'EOF'
+  - name: Build APK  
+    run: gradle --no-daemon assembleDebug  
 
-          android {
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-          }
-          EOF
-
-          echo "Konfigurasi Java 17 ditambahkan."
-          cat "$FILE"
-
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
-
-      - name: Build APK
-        run: |
-          cd "$PROJECT_DIR"
-          gradle --no-daemon assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Bella-Chat-APK
-          path: extracted/**/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-
+  - name: Upload APK  
+    uses: actions/upload-artifact@v4  
+    with:  
+      name: Bella-Chat-APK  
+      path: app/build/outputs/apk/debug/*.apk  
+      if-no-files-found: error
