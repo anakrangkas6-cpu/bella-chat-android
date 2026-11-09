@@ -56,19 +56,19 @@ jobs:
             manifest.write_text(text)
             PY
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
+           - name: Setup Java
+          uses: actions/setup-java@v4
+          with:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
+          - name: Setup Gradle
+          uses: gradle/actions/setup-gradle@v4
+          with:
           gradle-version: "8.9"
                                                        
-      - name: Fix Java and Kotlin compatibility
-        run: |
+          - name: Fix Java and Kotlin compatibility
+           run: |
           python3 - <<'PY'
           import pathlib, re
           # Cari SEMUA file build.gradle, di mana pun dia ngumpet
