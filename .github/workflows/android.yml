@@ -1,95 +1,62 @@
-name: Build Bella Chat APK
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Extract Android project
-        run: |
-          unzip -o Bella-Chat-Android-Tahap-1.zip -d .
-          test -f app/src/main/AndroidManifest.xml
-          ls -R | head -n 100
-
       - name: Generate Bella launcher icon
         run: |
           python3 -m pip install pillow
           python3 - <<'PY'
           from PIL import Image, ImageOps
           from pathlib import Path
-          img = Image.open("1794032586501.jpg").convert("RGBA")
+
+          # Cari foto Bella-nya, di mana pun dia
+          src = None
+          for name in ["1794032586501.jpg", "bella.jpg", "icon.jpg", "bella.png"]:
+              if Path(name).exists():
+                  src = Path(name)
+                  break
+          if src is None:
+              # Cari file jpg pertama yang ketemu
+              jpgs = list(Path(".").rglob("*.jpg"))
+              src = jpgs[0] if jpgs else None
+          print(f"Foto sumber: {src}")
+          img = Image.open(src).convert("RGBA")
+          # Buat jadi kotak 512, biar nggak kepotong
           img = ImageOps.fit(img, (512, 512))
-          sizes = {"mdpi": 48,"hdpi": 72,"xhdpi": 96,"xxhdpi": 144,"xxxhdpi": 192}
+
+          # 1. Bikin icon biasa buat HP lama
+          sizes = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
           for density, size in sizes.items():
               folder = Path(f"app/src/main/res/mipmap-{density}")
               folder.mkdir(parents=True, exist_ok=True)
               icon = img.resize((size, size), Image.Resampling.LANCZOS)
               icon.save(folder / "ic_launcher.png")
-          print("Ikon Bella berhasil dibuat.")
+              icon.save(folder / "ic_launcher_round.png")
+
+          # 2. Bikin Adaptive Icon buat HP baru (INI YANG BIKIN MUNCUL)
+          # Foreground = foto Bella, Background = hitam biar cantik
+          for density, size in sizes.items():
+              folder = Path(f"app/src/main/res/mipmap-{density}")
+              # Foreground harus 108dp, jadi kita bikin 432x432 dengan padding
+              fg_size = int(size * 108 / 48)
+              fg = Image.new("RGBA", (fg_size, fg_size), (0,0,0,0))
+              # Foto di tengah, dikecilin dikit biar nggak kepotong lingkaran
+              inner = img.resize((int(fg_size*0.75), int(fg_size*0.75)), Image.Resampling.LANCZOS)
+              fg.paste(inner, ((fg_size-inner.size[0])//2, (fg_size-inner.size[1])//2), inner)
+              fg.save(folder / "ic_launcher_foreground.png")
+              # Background polos
+              bg = Image.new("RGBA", (fg_size, fg_size), (20, 20, 25, 255))
+              bg.save(folder / "ic_launcher_background.png")
+
+          # 3. Bikin XML adaptive-nya
+          anydpi = Path("app/src/main/res/mipmap-anydpi-v26")
+          anydpi.mkdir(parents=True, exist_ok=True)
+          (anydpi / "ic_launcher.xml").write_text('''<?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@mipmap/ic_launcher_background"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+              <monochrome android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>''')
+          (anydpi / "ic_launcher_round.xml").write_text('''<?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@mipmap/ic_launcher_background"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>''')
+          print("Ikon Bella Adaptive berhasil dibuat!")
           PY
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
-                                                       
-      - name: Fix Java and Kotlin compatibility
-        run: |
-          python3 - <<'PY'
-          import pathlib, re
-          # Cari SEMUA file build.gradle, di mana pun dia ngumpet
-          files = list(pathlib.Path(".").rglob("build.gradle")) + list(pathlib.Path(".").rglob("build.gradle.kts"))
-          print(f"Ketemu {len(files)} file:")
-          for f in files:
-              print(" -", f)
-              text = f.read_text()
-              orig = text
-              # Ganti semua bentuk 1.8 jadi 17, semua format
-              text = text.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_17")
-              text = text.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_17")
-              text = text.replace('jvmTarget = "1.8"', 'jvmTarget = "17"')
-              text = text.replace("jvmTarget = '1.8'", "jvmTarget = '17'")
-              text = text.replace('JvmTarget = "1.8"', 'JvmTarget = "17"')
-              text = text.replace('"1.8"', '"17"')
-              text = text.replace("'1.8'", "'17'")
-              text = text.replace("VERSION_1_8", "VERSION_17")
-              text = text.replace("1_8", "17")
-              # Kalau masih ada compileOptions yang bandel, paksa tambahin toolchain
-              if "jvmToolchain" not in text and "app/build" in str(f):
-                  text += "\n\nkotlin { jvmToolchain(17) }\n"
-              if text != orig:
-                  f.write_text(text)
-                  print(f"  -> DIPERBAIKI: {f}")
-              else:
-                  print(f"  -> sudah 17 / tidak ada 1.8")
-              print(f.read_text()[:1500])
-              print("-----")
-          PY
-
-      - name: Build APK
-        run: gradle --no-daemon assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Bella-Chat-APK
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
