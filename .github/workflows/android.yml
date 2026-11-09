@@ -29,7 +29,7 @@ jobs:
           python3 - <<'PY'
           from PIL import Image, ImageOps
           from pathlib import Path
-          img = Image.open("1794032586501.jpg").convert("RGBA")
+          img = Image.open("bella-icon.jpg").convert("RGBA")
           img = ImageOps.fit(img, (512, 512))
           sizes = {"mdpi": 48,"hdpi": 72,"xhdpi": 96,"xxhdpi": 144,"xxxhdpi": 192}
           for density, size in sizes.items():
