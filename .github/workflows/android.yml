@@ -21,7 +21,7 @@ jobs:
       - name: Extract Android project
         run: unzip -o Bella-Chat-Android-Tahap-1.zip -d .
 
-            - name: Set Java target to 17
+      - name: Set Java target to 17
         run: |
           python3 - <<'PY'
           from pathlib import Path
