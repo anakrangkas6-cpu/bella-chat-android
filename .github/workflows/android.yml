@@ -30,7 +30,7 @@ jobs:
             from PIL import Image, ImageOps
             from pathlib import Path
 
-            img = Image.open("1794032586501.jpg").convert("RGB")
+            img = Image.open("bella-icon.jpg").convert("RGB")
             img = ImageOps.fit(img, (512, 512), centering=(0.5, 0.35))
 
             sizes = {
