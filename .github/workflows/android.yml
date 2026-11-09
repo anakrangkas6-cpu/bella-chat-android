@@ -53,22 +53,36 @@ jobs:
                                                        
       - name: Fix Java and Kotlin compatibility
         run: |
-          echo "=== CARI FILE NYA ==="
-          find . -maxdepth 3 -name "build.gradle*" -print
-          ls -R app | head -n 100
-
-          echo "=== FIX SEMUA YANG KETEMU ==="
-          for f in app/build.gradle.kts app/build.gradle build.gradle.kts build.gradle bella-chat-android/app/build.gradle.kts; do
-            if [ -f "$f" ]; then
-              echo "Fix file: $f"
-              sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_17/g' "$f" || true
-              sed -i 's/jvmTarget = "1.8"/jvmTarget = "17"/g' "$f" || true
-              sed -i "s/jvmTarget = '1.8'/jvmTarget = '17'/g" "$f" || true
-              sed -i 's/JvmTarget = "1.8"/JvmTarget = "17"/g' "$f" || true
-              cat "$f"
-            fi
-          done
-          echo "=== SELESAI FIX ==="
+          python3 - <<'PY'
+          import pathlib, re
+          # Cari SEMUA file build.gradle, di mana pun dia ngumpet
+          files = list(pathlib.Path(".").rglob("build.gradle")) + list(pathlib.Path(".").rglob("build.gradle.kts"))
+          print(f"Ketemu {len(files)} file:")
+          for f in files:
+              print(" -", f)
+              text = f.read_text()
+              orig = text
+              # Ganti semua bentuk 1.8 jadi 17, semua format
+              text = text.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_17")
+              text = text.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_17")
+              text = text.replace('jvmTarget = "1.8"', 'jvmTarget = "17"')
+              text = text.replace("jvmTarget = '1.8'", "jvmTarget = '17'")
+              text = text.replace('JvmTarget = "1.8"', 'JvmTarget = "17"')
+              text = text.replace('"1.8"', '"17"')
+              text = text.replace("'1.8'", "'17'")
+              text = text.replace("VERSION_1_8", "VERSION_17")
+              text = text.replace("1_8", "17")
+              # Kalau masih ada compileOptions yang bandel, paksa tambahin toolchain
+              if "jvmToolchain" not in text and "app/build" in str(f):
+                  text += "\n\nkotlin { jvmToolchain(17) }\n"
+              if text != orig:
+                  f.write_text(text)
+                  print(f"  -> DIPERBAIKI: {f}")
+              else:
+                  print(f"  -> sudah 17 / tidak ada 1.8")
+              print(f.read_text()[:1500])
+              print("-----")
+          PY
 
       - name: Build APK
         run: gradle --no-daemon assembleDebug
