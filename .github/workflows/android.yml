@@ -18,13 +18,21 @@ jobs:
         uses: actions/checkout@v4
 
       
+      
       - name: Extract Android project
         run: |
-          unzip -o Bella-Chat-Android-Tahap-1-Personalisasi-1.zip -d .
-          PROJECT_DIR=$(find . -type f -path '*/app/src/main/AndroidManifest.xml' -print -quit | sed 's#/app/src/main/AndroidManifest.xml##')
+          mkdir -p extracted
+          echo "Daftar file ZIP:"
+          find . -maxdepth 3 -type f -iname '*.zip'
+          ZIP_FILE=$(find . -maxdepth 3 -type f -iname '*.zip' ! -path './.git/*' -print -quit)
+          test -n "$ZIP_FILE"
+          echo "ZIP ditemukan: $ZIP_FILE"
+          unzip -o "$ZIP_FILE" -d extracted
+          PROJECT_DIR=$(find extracted -type f -path '*/app/src/main/AndroidManifest.xml' -print -quit | sed 's#/app/src/main/AndroidManifest.xml##')
           test -n "$PROJECT_DIR"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Folder Android ditemukan: $PROJECT_DIR"
+
 
 
       - name: Generate Bella launcher icon
