@@ -96,8 +96,16 @@ jobs:
               print("-----")
           PY
 
+      
       - name: Build APK
-        run: gradle --no-daemon assembleDebug
+        run: |
+          cd "$PROJECT_DIR"
+          echo "Lokasi proyek:"
+          pwd
+          echo "Isi folder:"
+          ls -la
+          gradle --no-daemon assembleDebug
+
 
       
       - name: Upload APK
