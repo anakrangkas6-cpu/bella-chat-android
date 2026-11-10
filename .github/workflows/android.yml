@@ -20,7 +20,7 @@ jobs:
       
       - name: Extract Android project
         run: |
-          unzip -o Bella-Chat-Android-Tahap-1.zip -d .
+          unzip -o Bella-Chat-Android-Tahap-1-Personalisasi-1.zip -d .
           PROJECT_DIR=$(find . -type f -path '*/app/src/main/AndroidManifest.xml' -print -quit | sed 's#/app/src/main/AndroidManifest.xml##')
           test -n "$PROJECT_DIR"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
