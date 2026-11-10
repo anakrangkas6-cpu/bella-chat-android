@@ -19,7 +19,7 @@ jobs:
 
       - name: Extract Android project
         run: |
-          unzip -o Bella-Chat-Android-Tahap-1.zip -d .
+          unzip -o Bella-Chat-Android-Tahap-1-Personalisasi.zip -d .
           test -f app/src/main/AndroidManifest.xml
           ls -R | head -n 100
 
